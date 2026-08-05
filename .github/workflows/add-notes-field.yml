@@ -1,0 +1,58 @@
+name: Agregar campo Notas
+
+on:
+  push:
+    paths:
+      - '.github/workflows/add-notes-field.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Agregar Notas a todos los registros
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('app.js')
+          text = path.read_text(encoding='utf-8')
+
+          old_top = 'const top=[["__id","ID",r.id],["__title","Título",r.title],["__summary","Resumen",r.summary],["__status","Estado",r.status],["__priority","Prioridad",r.priority]],fields='
+          new_top = 'const top=[["__id","ID",r.id],["__title","Título",r.title],["__summary","Resumen",r.summary],["__status","Estado",r.status],["__priority","Prioridad",r.priority],["__notes","Notas",r.notes||""]],fields='
+
+          old_save = 'r.priority=String(f.get("__priority")||"").trim();Object.keys(r.fields||{}).forEach'
+          new_save = 'r.priority=String(f.get("__priority")||"").trim();r.notes=String(f.get("__notes")||"").trim();Object.keys(r.fields||{}).forEach'
+
+          old_new = 'summary:"",status:"Pendiente",priority:"",fields:{Notas:""},starred:false'
+          new_new = 'summary:"",status:"Pendiente",priority:"",notes:"",fields:{},starred:false'
+
+          replacements = [(old_top, new_top), (old_save, new_save), (old_new, new_new)]
+          changed = False
+          for old, new in replacements:
+              if old in text:
+                  text = text.replace(old, new, 1)
+                  changed = True
+              elif new not in text:
+                  raise SystemExit(f'No se encontró el patrón esperado: {old[:80]}')
+
+          path.write_text(text, encoding='utf-8')
+          print('Campo Notas agregado.' if changed else 'El campo Notas ya estaba agregado.')
+          PY
+      - name: Guardar modificación
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app.js
+          if git diff --cached --quiet; then
+            echo "Sin cambios."
+          else
+            git commit -m "Agregar campo Notas a todos los registros"
+            git push
+          fi
