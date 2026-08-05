@@ -3,38 +3,76 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#173e33">
+<meta name="theme-color" content="#7f9c88">
 <title>Atlas del Canon</title>
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 <div class="shell">
-<aside class="sidebar" id="sidebar">
-  <div class="brand"><div class="mark">A</div><div><div class="brand-title">Atlas del Canon</div><div class="brand-sub">Sincronizado con GitHub</div></div></div>
-  <nav class="nav" id="nav"></nav>
-  <div class="side-bottom">
-    <button class="btn" style="width:100%" id="settingsBtn">Conexión GitHub</button>
-    <div class="sync-line"><span class="dot" id="syncDot"></span><span id="syncText">Sin conexión</span></div>
-  </div>
-</aside>
-<main class="main">
-<header class="topbar">
-  <button class="btn mobile" id="menuBtn">☰</button>
-  <input class="search" id="search" placeholder="Buscar en todo el proyecto…">
-  <div class="actions"><button class="btn secondary" id="themeBtn">◐</button><button class="btn" id="pullBtn">Recargar</button><button class="btn primary" id="pushBtn">Guardar en GitHub</button></div>
-</header>
-<section class="page">
-  <div class="head"><div><div class="eyebrow" id="eyebrow">Panel general</div><h1 id="title">Estado del proyecto</h1><p id="desc">Canon, decisiones y continuidad en una única fuente versionada.</p></div><button class="btn" id="newBtn">Nuevo registro</button></div>
-  <div id="dashboard"></div>
-  <div id="collection" hidden><div class="toolbar"><div class="filters"><select id="statusF"><option value="">Todos los estados</option></select><select id="priorityF"><option value="">Todas las prioridades</option></select><select id="areaF"><option value="">Todas las áreas</option></select></div><div><span id="results"></span> <button class="btn small" id="clearF">Limpiar</button></div></div><div class="records" id="records"></div><div class="empty" id="empty" hidden>No hay resultados.</div></div>
-</section>
-</main></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="mark">A</div>
+      <div><div class="brand-title">Atlas del Canon</div><div class="brand-sub">Escritorio narrativo</div></div>
+    </div>
+    <nav class="nav" id="nav"></nav>
+    <div class="side-bottom">
+      <button class="btn subtle full" id="settingsBtn">Conexión GitHub</button>
+      <div class="sync-line"><span class="dot" id="syncDot"></span><span id="syncText">Sin conexión</span></div>
+    </div>
+  </aside>
 
-<div class="modal-bg" id="connectBg" hidden><section class="modal small"><div class="modal-head"><div><div class="eyebrow">Sincronización directa</div><h2>Conectar con GitHub</h2></div><button class="close" data-close="connectBg">×</button></div><div class="modal-body stack"><div class="notice">Los datos viven en <strong>Agent75-ai/atlas-canon-data</strong>. El token se guarda únicamente en este navegador y nunca se publica en el repositorio.</div><div class="field"><label>Token fine-grained de GitHub</label><input type="password" id="tokenInput" placeholder="github_pat_…"></div><label class="check"><input type="checkbox" id="rememberToken"> Recordar el token en este dispositivo</label><div class="token-help">Permiso requerido: acceso solamente a <code>atlas-canon-data</code> con <code>Contents: Read and write</code>.</div><button class="btn primary" id="connectBtn">Conectar y cargar el canon</button><div class="notice bad" id="connectError" hidden></div></div></section></div>
+  <main class="main">
+    <header class="topbar">
+      <button class="btn mobile" id="menuBtn" aria-label="Abrir menú">☰</button>
+      <label class="search-wrap"><span>⌕</span><input class="search" id="search" placeholder="Buscar en el Atlas…"></label>
+      <div class="actions">
+        <button class="btn icon" id="themeBtn" title="Cambiar tema">◐</button>
+        <button class="btn" id="pullBtn">Recargar</button>
+        <button class="btn primary" id="pushBtn">Guardar</button>
+      </div>
+    </header>
 
-<div class="modal-bg" id="recordBg" hidden><section class="modal"><div class="modal-head"><div><div class="eyebrow" id="recordEyebrow">Editar</div><h2 id="recordTitle">Registro</h2></div><button class="close" data-close="recordBg">×</button></div><form class="modal-body" id="recordForm"></form><div class="modal-foot"><button class="btn danger" id="deleteBtn">Eliminar</button><div style="margin-left:auto;display:flex;gap:8px"><button class="btn" type="button" data-close="recordBg">Cancelar</button><button class="btn primary" type="submit" form="recordForm">Guardar</button></div></div></section></div>
+    <section class="page">
+      <div class="head">
+        <div><div class="eyebrow" id="eyebrow">Escritorio del autor</div><h1 id="title">Tu mundo, con espacio para pensar</h1><p id="desc">Lo urgente a la vista; el resto, disponible cuando haga falta.</p></div>
+        <button class="btn primary" id="newBtn">Nuevo</button>
+      </div>
+      <div id="view"></div>
+    </section>
+  </main>
+</div>
 
-<div class="modal-bg" id="conflictBg" hidden><section class="modal small"><div class="modal-head"><div><div class="eyebrow">Conflicto de versiones</div><h2>GitHub cambió desde tu última carga</h2></div></div><div class="modal-body stack"><div class="notice bad">No se sobrescribió nada. Elegí recargar la versión remota o reemplazarla conscientemente por tu versión local.</div><button class="btn" id="conflictPull">Recargar desde GitHub</button><button class="btn danger" id="conflictForce">Sobrescribir GitHub con mi versión</button></div></section></div>
+<div class="modal-bg" id="connectBg" hidden>
+  <section class="modal small">
+    <div class="modal-head"><div><div class="eyebrow">Sincronización directa</div><h2>Conectar con GitHub</h2></div><button class="close" data-close="connectBg">×</button></div>
+    <div class="modal-body stack">
+      <div class="notice">Los datos viven en <strong>Agent75-ai/atlas-canon-data</strong>. El token se guarda únicamente en este navegador.</div>
+      <div class="field"><label>Token fine-grained de GitHub</label><input type="password" id="tokenInput" placeholder="github_pat_…"></div>
+      <label class="check"><input type="checkbox" id="rememberToken"> Recordar el token en este dispositivo</label>
+      <div class="token-help">Permiso requerido: <code>Contents: Read and write</code> solamente para el repositorio de datos.</div>
+      <button class="btn primary" id="connectBtn">Conectar y cargar el canon</button>
+      <div class="notice bad" id="connectError" hidden></div>
+    </div>
+  </section>
+</div>
+
+<div class="modal-bg" id="recordBg" hidden>
+  <section class="modal">
+    <div class="modal-head"><div><div class="eyebrow" id="recordEyebrow">Editar</div><h2 id="recordTitle">Registro</h2></div><button class="close" data-close="recordBg">×</button></div>
+    <form class="modal-body" id="recordForm"></form>
+    <div class="modal-foot"><button class="btn danger" id="deleteBtn">Eliminar</button><div class="foot-actions"><button class="btn" type="button" data-close="recordBg">Cancelar</button><button class="btn primary" type="submit" form="recordForm">Guardar</button></div></div>
+  </section>
+</div>
+
+<div class="modal-bg" id="conflictBg" hidden>
+  <section class="modal small">
+    <div class="modal-head"><div><div class="eyebrow">Conflicto de versiones</div><h2>GitHub cambió desde tu última carga</h2></div></div>
+    <div class="modal-body stack"><div class="notice bad">No se sobrescribió nada. Podés recargar la versión remota o reemplazarla conscientemente por la local.</div><button class="btn" id="conflictPull">Recargar desde GitHub</button><button class="btn danger" id="conflictForce">Sobrescribir GitHub con mi versión</button></div>
+  </section>
+</div>
+
+<input type="file" id="imageInput" accept="image/*" hidden>
 <div class="toast-wrap" id="toasts"></div>
 <script src="app.js"></script>
-</body></html>
+</body>
+</html>
