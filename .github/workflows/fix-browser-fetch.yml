@@ -1,0 +1,38 @@
+name: Corregir conexión del navegador
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-browser-fetch.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Simplificar llamadas a GitHub
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('app.js')
+          s = p.read_text(encoding='utf-8')
+          old_gh = '''async function gh(method,url,body){const r=await fetch(url,{method,headers:{Authorization:`Bearer ${token}`,Accept:"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28",...(body?{"Content-Type":"application/json"}:{})},body:body?JSON.stringify(body):undefined});if(!r.ok){const e=await r.json().catch(()=>({message:r.statusText}));const err=new Error(e.message||`GitHub ${r.status}`);err.status=r.status;throw err}return r.json()}'''
+          new_gh = '''async function gh(method,url,body){let last;for(let attempt=0;attempt<3;attempt++){try{const headers={Authorization:`token ${token}`,...(body?{"Content-Type":"application/json"}:{})};const r=await fetch(url,{method,headers,body:body?JSON.stringify(body):undefined,cache:"no-store",mode:"cors"});if(!r.ok){const e=await r.json().catch(()=>({message:r.statusText}));const err=new Error(e.message||`GitHub ${r.status}`);err.status=r.status;throw err}return r.json()}catch(e){last=e;if(e.status)throw e;if(attempt<2)await new Promise(resolve=>setTimeout(resolve,700*(attempt+1)))}}throw new Error(`No se pudo conectar con GitHub: ${last?.message||"error de red"}`)}'''
+          old_pull = '''async function pull(){if(!token)return openConnect();syncStatus("","Cargando desde GitHub…");try{const entries=await Promise.all(Object.keys(FILES).map(async key=>[key,await loadFile(key)]));const map=Object.fromEntries(entries),meta=map.meta;data={...meta,collections:{}};for(const key of Object.keys(FILES))if(key!=="meta")data.collections[key]=map[key];dirty.clear();syncStatus("ok","Sincronizado");render();toast("Canon cargado desde GitHub")}catch(e){syncStatus("bad","Error de conexión");if(e.status===401||e.status===403){token="";sessionStorage.removeItem(SESSION_KEY);localStorage.removeItem(LOCAL_KEY);openConnect(`GitHub rechazó el token: ${e.message}`)}else openConnect(e.message)}}'''
+          new_pull = '''async function pull(){if(!token)return openConnect();syncStatus("","Cargando desde GitHub…");try{const entries=[];for(const key of Object.keys(FILES)){syncStatus("",`Cargando ${key}…`);entries.push([key,await loadFile(key)])}const map=Object.fromEntries(entries),meta=map.meta;data={...meta,collections:{}};for(const key of Object.keys(FILES))if(key!=="meta")data.collections[key]=map[key];dirty.clear();syncStatus("ok","Sincronizado");render();toast("Canon cargado desde GitHub")}catch(e){syncStatus("bad","Error de conexión");if(e.status===401||e.status===403){token="";sessionStorage.removeItem(SESSION_KEY);localStorage.removeItem(LOCAL_KEY);openConnect(`GitHub rechazó el token: ${e.message}`)}else openConnect(e.message)}}'''
+          if old_gh not in s:
+              raise SystemExit('No se encontró la función gh esperada')
+          if old_pull not in s:
+              raise SystemExit('No se encontró la función pull esperada')
+          s = s.replace(old_gh, new_gh).replace(old_pull, new_pull)
+          p.write_text(s, encoding='utf-8')
+      - name: Publicar corrección
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app.js
+          git commit -m "Corregir conexión GitHub desde navegador"
+          git push
