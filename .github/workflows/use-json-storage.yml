@@ -1,0 +1,55 @@
+name: Usar almacenamiento JSON
+
+on:
+  push:
+    paths:
+      - '.github/workflows/use-json-storage.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Simplificar lectura y escritura de datos
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('app.js')
+          text = path.read_text(encoding='utf-8')
+          original = text
+
+          for name in ['meta','canon','decisiones','pendientes','auditoria','integracion','concordancia','civilizaciones','libro1']:
+              text = text.replace(f'{name}.gz.b64', f'{name}.json')
+
+          old_load = 'packed=decodeGitHubBase64(r.content),obj=JSON.parse(await gunzipB64(packed))'
+          new_load = 'text=decodeGitHubBase64(r.content),obj=JSON.parse(text)'
+          assert old_load in text, 'No se encontró la lectura comprimida'
+          text = text.replace(old_load, new_load, 1)
+
+          old_save = 'const packed=await gzipB64(JSON.stringify(data.collections[key]));'
+          new_save = 'const text=JSON.stringify(data.collections[key],null,2);'
+          assert old_save in text, 'No se encontró la escritura comprimida'
+          text = text.replace(old_save, new_save, 1)
+
+          old_content = 'content:encodeGitHubBase64(packed)'
+          new_content = 'content:encodeGitHubBase64(text)'
+          assert old_content in text, 'No se encontró el contenido comprimido'
+          text = text.replace(old_content, new_content, 1)
+
+          assert text != original
+          assert '.gz.b64' not in text.split('const FILES=',1)[1].split(';',1)[0]
+          path.write_text(text, encoding='utf-8')
+          print('app.js actualizado para JSON directo')
+          PY
+      - name: Guardar actualización
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app.js
+          git commit -m 'Usar JSON directo para el canon'
+          git push
