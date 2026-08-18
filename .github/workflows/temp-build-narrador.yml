@@ -42,6 +42,7 @@ jobs:
           base64 -d narrador-source.full.b64 > NarradorOffline_MotoG75_source.zip
           echo "12e8f6e126daa42904aafb140f0cb069fa99e07d30e31424f05b5b8daecd1ab1  NarradorOffline_MotoG75_source.zip" | sha256sum -c -
           unzip -q NarradorOffline_MotoG75_source.zip
+          sed -i 's/Settings.ACTION_TTS_SETTINGS/"com.android.settings.TTS_SETTINGS"/' NarradorOffline/app/src/main/java/com/gregorio/narradoroffline/MainActivity.java
 
       - name: Build APK
         working-directory: NarradorOffline
