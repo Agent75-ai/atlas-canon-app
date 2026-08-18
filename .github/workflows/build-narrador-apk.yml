@@ -72,6 +72,16 @@ jobs:
           p.write_text(s)
           PY
 
+      - name: Upload patched Java source for diagnosis
+        uses: actions/upload-artifact@v4
+        with:
+          name: NarradorOffline-Patched-Java-Source
+          path: |
+            NarradorOffline/app/src/main/java/com/gregorio/narradoroffline/MainActivity.java
+            NarradorOffline/app/src/main/java/com/gregorio/narradoroffline/NarrationService.java
+            NarradorOffline/app/src/main/java/com/gregorio/narradoroffline/MarkdownUtils.java
+          if-no-files-found: error
+
       - name: Embed Aldo neural voice
         run: |
           curl -L --fail --retry 4 --retry-delay 3 https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/vits-piper-es_MX-ald-medium.tar.bz2 -o /tmp/aldo.tar.bz2
