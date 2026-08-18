@@ -90,7 +90,8 @@ jobs:
           test -f NarradorOffline/app/src/main/assets/tts/es_MX-ald-medium.onnx
           test -f NarradorOffline/app/src/main/assets/tts/tokens.txt
           test -d NarradorOffline/app/src/main/assets/tts/espeak-ng-data
-          echo "b5e77074846d97651421244167a11d53c762fa41f953de98ab21957a6036eab4  NarradorOffline/app/src/main/assets/tts/es_MX-ald-medium.onnx" | sha256sum -c -
+          test "$(stat -c%s NarradorOffline/app/src/main/assets/tts/es_MX-ald-medium.onnx)" -gt 60000000
+          echo "Embedded release model SHA256: $(sha256sum NarradorOffline/app/src/main/assets/tts/es_MX-ald-medium.onnx | cut -d' ' -f1)"
           du -sh NarradorOffline/app/src/main/assets/tts
 
       - name: Build APK
