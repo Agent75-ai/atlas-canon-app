@@ -3,6 +3,8 @@ name: Build Narrador Offline APK
 on:
   push:
     branches: ["temp-narrador-apk"]
+  pull_request:
+    branches: ["main"]
   workflow_dispatch:
 
 jobs:
