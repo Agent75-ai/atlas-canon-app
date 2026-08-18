@@ -1,23 +1,25 @@
-name: Build Narrador Offline APK
+name: Build Narrador Offline Neural APK
 
 on:
   push:
     branches: ["temp-narrador-apk"]
   pull_request:
     branches: ["main"]
+    types: [opened, synchronize, reopened]
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -30,46 +32,65 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install Android SDK packages
+      - name: Install Android SDK 35
         run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
 
-      - name: Recreate source
+      - name: Recreate source project
         run: |
           base64 -d narrador-source.b64 > NarradorOffline_MotoG75_source.zip
           unzip -q NarradorOffline_MotoG75_source.zip
 
-      - name: Build debug APK
-        id: apkbuild
-        continue-on-error: true
+      - name: Apply neural voice and Markdown loading fix
+        run: |
+          cat embedded-patch/NarrationService.part*.b64 > /tmp/narration-service.gz.b64
+          base64 -d /tmp/narration-service.gz.b64 | gzip -d > NarradorOffline/app/src/main/java/com/gregorio/narradoroffline/NarrationService.java
+          echo "705d9d99271d4eba71bab3f5949687444fbb1e0f5e668f69b3b0bc5a9e07eae7  NarradorOffline/app/src/main/java/com/gregorio/narradoroffline/NarrationService.java" | sha256sum -c -
+
+          base64 -d embedded-patch/MainActivity.fixed.gz.b64 | gzip -d > NarradorOffline/app/src/main/java/com/gregorio/narradoroffline/MainActivity.java
+          echo "aaf31fe2fb351766e2154c457781700169d2a3f849f08a51c1759c3835aa75c8  NarradorOffline/app/src/main/java/com/gregorio/narradoroffline/MainActivity.java" | sha256sum -c -
+
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('NarradorOffline/settings.gradle')
+          s=p.read_text().replace('mavenCentral()\n    }', "mavenCentral()\n        maven { url 'https://jitpack.io' }\n    }")
+          p.write_text(s)
+          p=Path('NarradorOffline/app/build.gradle')
+          s=p.read_text()
+          s=s.replace('versionCode 1', 'versionCode 3')
+          s=s.replace("versionName '1.0.0'", "versionName '2.0.1-neural'")
+          s=s.replace('targetSdk 35\n', "targetSdk 35\n        ndk { abiFilters 'arm64-v8a' }\n")
+          s += "\n\ndependencies {\n    implementation 'com.github.k2-fsa:sherpa-onnx:v1.13.4'\n}\n"
+          p.write_text(s)
+          p=Path('NarradorOffline/app/src/main/res/layout/activity_main.xml')
+          s=p.read_text()
+          s=s.replace('Perfil recomendado: Piper es_MX-claude-high. Voz masculina latina, calidad alta.', 'Voz integrada: Aldo · español latino es-419 · neural · offline.')
+          s=s.replace('android:id="@+id/btnVoxSherpa"', 'android:id="@+id/btnVoxSherpa"\n                    android:visibility="gone"')
+          s=s.replace('android:id="@+id/btnTtsSettings"', 'android:id="@+id/btnTtsSettings"\n                android:visibility="gone"')
+          p.write_text(s)
+          PY
+
+      - name: Embed Aldo neural voice
+        run: |
+          curl -L --fail --retry 4 --retry-delay 3 https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/vits-piper-es_MX-ald-medium.tar.bz2 -o /tmp/aldo.tar.bz2
+          mkdir -p /tmp/aldo
+          tar -xjf /tmp/aldo.tar.bz2 -C /tmp/aldo
+          MODEL_DIR=$(find /tmp/aldo -maxdepth 1 -type d -name 'vits-piper-es_MX-ald-medium*' | head -1)
+          test -n "$MODEL_DIR"
+          mkdir -p NarradorOffline/app/src/main/assets/tts
+          cp -a "$MODEL_DIR"/. NarradorOffline/app/src/main/assets/tts/
+
+      - name: Build APK
         working-directory: NarradorOffline
-        run: |
-          set -o pipefail
-          gradle --no-daemon :app:assembleDebug 2>&1 | tee ../narrador-build.log
+        run: gradle --no-daemon --stacktrace :app:assembleDebug
 
-      - name: Export result to temporary branch
-        if: always() && github.event_name == 'push'
+      - name: Inspect APK
         run: |
-          if [ -f NarradorOffline/app/build/outputs/apk/debug/app-debug.apk ]; then
-            base64 -w0 NarradorOffline/app/build/outputs/apk/debug/app-debug.apk > NarradorOffline-MotoG75.apk.b64
-            sha256sum NarradorOffline/app/build/outputs/apk/debug/app-debug.apk > NarradorOffline-MotoG75.sha256
-            echo "BUILD_OK" >> narrador-build.log
-          else
-            echo "BUILD_FAILED" >> narrador-build.log
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add narrador-build.log NarradorOffline-MotoG75.apk.b64 NarradorOffline-MotoG75.sha256 2>/dev/null || true
-          git diff --cached --quiet || git commit -m "Narrador APK build result"
-          git push origin HEAD:temp-narrador-apk
-
-      - name: Fail if APK build failed
-        if: steps.apkbuild.outcome == 'failure'
-        run: exit 1
+          unzip -t NarradorOffline/app/build/outputs/apk/debug/app-debug.apk >/dev/null
+          unzip -l NarradorOffline/app/build/outputs/apk/debug/app-debug.apk | grep -E 'assets/tts/es_MX-ald-medium.onnx|lib/arm64-v8a/libsherpa-onnx-jni.so|lib/arm64-v8a/libonnxruntime.so'
 
       - name: Upload APK
-        if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: NarradorOffline-MotoG75-APK
+          name: NarradorOffline-MotoG75-Neural-FileFix-APK
           path: NarradorOffline/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
