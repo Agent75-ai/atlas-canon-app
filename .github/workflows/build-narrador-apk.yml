@@ -57,7 +57,7 @@ jobs:
 
           base64 -d embedded-patch/MainActivity.fixed.gz.b64 | gzip -d > NarradorOffline/app/src/main/java/com/gregorio/narradoroffline/MainActivity.java
           test -s NarradorOffline/app/src/main/java/com/gregorio/narradoroffline/MainActivity.java
-          grep -q 'pendingUri' NarradorOffline/app/src/main/java/com/gregorio/narradoroffline/MainActivity.java
+          grep -q 'pendingOpenUri' NarradorOffline/app/src/main/java/com/gregorio/narradoroffline/MainActivity.java
 
           python3 - <<'PY'
           from pathlib import Path
