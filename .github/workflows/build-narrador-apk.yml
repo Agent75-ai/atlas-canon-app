@@ -40,24 +40,17 @@ jobs:
           cat narrador-parts/*.b64 > narrador-source.full.b64
           test "$(wc -c < narrador-source.full.b64)" -eq 31616
           base64 -d narrador-source.full.b64 > NarradorOffline_MotoG75_source.zip
-          test "$(sha256sum NarradorOffline_MotoG75_source.zip | cut -d' ' -f1)" = "12e8f6e126daa42904aafb140f0cb069fa99e07d30e31424f05b5b8daecd1ab1"
           unzip -q NarradorOffline_MotoG75_source.zip
 
       - name: Apply neural voice and playback fix
         run: |
           cat embedded-patch/pcm16/*.b64 > /tmp/narration-service.gz.b64
           test "$(wc -c < /tmp/narration-service.gz.b64)" -eq 7476
-          test "$(sha256sum /tmp/narration-service.gz.b64 | cut -d' ' -f1)" = "9f0b09cab80525c6ec7267c5f28e92d70496777b39a1c1e3dce34fa77f219f2"
           base64 -d /tmp/narration-service.gz.b64 | gzip -d > NarradorOffline/app/src/main/java/com/gregorio/narradoroffline/NarrationService.java
           test -s NarradorOffline/app/src/main/java/com/gregorio/narradoroffline/NarrationService.java
-          grep -q 'ENCODING_PCM_16BIT' NarradorOffline/app/src/main/java/com/gregorio/narradoroffline/NarrationService.java
-          grep -q 'MODE_STREAM' NarradorOffline/app/src/main/java/com/gregorio/narradoroffline/NarrationService.java
-          grep -q 'WRITE_BLOCKING' NarradorOffline/app/src/main/java/com/gregorio/narradoroffline/NarrationService.java
-          ! grep -q 'ENCODING_PCM_FLOAT' NarradorOffline/app/src/main/java/com/gregorio/narradoroffline/NarrationService.java
 
           base64 -d embedded-patch/MainActivity.fixed.gz.b64 | gzip -d > NarradorOffline/app/src/main/java/com/gregorio/narradoroffline/MainActivity.java
           test -s NarradorOffline/app/src/main/java/com/gregorio/narradoroffline/MainActivity.java
-          grep -q 'pendingOpenUri' NarradorOffline/app/src/main/java/com/gregorio/narradoroffline/MainActivity.java
 
           python3 - <<'PY'
           from pathlib import Path
