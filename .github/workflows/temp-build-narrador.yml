@@ -37,7 +37,10 @@ jobs:
 
       - name: Recreate Android project
         run: |
-          base64 -d narrador-source.b64 > NarradorOffline_MotoG75_source.zip
+          cat narrador-parts/*.b64 > narrador-source.full.b64
+          test "$(wc -c < narrador-source.full.b64)" -eq 31616
+          base64 -d narrador-source.full.b64 > NarradorOffline_MotoG75_source.zip
+          echo "ca5301888045295185196093604163525d7f0781cfdbf441c5413122dc015fc1  NarradorOffline_MotoG75_source.zip" | sha256sum -c -
           unzip -q NarradorOffline_MotoG75_source.zip
 
       - name: Build APK
