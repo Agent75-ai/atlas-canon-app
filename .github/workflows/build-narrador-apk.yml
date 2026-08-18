@@ -42,37 +42,16 @@ jobs:
           base64 -d narrador-source.full.b64 > NarradorOffline_MotoG75_source.zip
           unzip -q NarradorOffline_MotoG75_source.zip
 
-      - name: Apply neural voice, playback and Kotlin runtime fixes
+      - name: Apply safe neural runtime fixes
         run: |
           cat embedded-patch/pcm16/*.b64 > /tmp/narration-service.gz.b64
           test "$(wc -c < /tmp/narration-service.gz.b64)" -eq 7476
           base64 -d /tmp/narration-service.gz.b64 | gzip -d > NarradorOffline/app/src/main/java/com/gregorio/narradoroffline/NarrationService.java
-          test -s NarradorOffline/app/src/main/java/com/gregorio/narradoroffline/NarrationService.java
-
           base64 -d embedded-patch/MainActivity.fixed.gz.b64 | gzip -d > NarradorOffline/app/src/main/java/com/gregorio/narradoroffline/MainActivity.java
-          test -s NarradorOffline/app/src/main/java/com/gregorio/narradoroffline/MainActivity.java
-
-          python3 - <<'PY'
-          from pathlib import Path
-          p=Path('NarradorOffline/settings.gradle')
-          s=p.read_text().replace('mavenCentral()\n    }', "mavenCentral()\n        maven { url 'https://jitpack.io' }\n    }")
-          p.write_text(s)
-
-          p=Path('NarradorOffline/app/build.gradle')
-          s=p.read_text()
-          s=s.replace('versionCode 1', 'versionCode 5')
-          s=s.replace("versionName '1.0.0'", "versionName '2.0.3-neural'")
-          s=s.replace('targetSdk 35\n', "targetSdk 35\n        ndk { abiFilters 'arm64-v8a' }\n")
-          s += "\n\ndependencies {\n    implementation 'com.github.k2-fsa:sherpa-onnx:v1.13.4'\n    implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.7.20'\n}\n"
-          p.write_text(s)
-
-          p=Path('NarradorOffline/app/src/main/res/layout/activity_main.xml')
-          s=p.read_text()
-          s=s.replace('Perfil recomendado: Piper es_MX-claude-high. Voz masculina latina, calidad alta.', 'Voz integrada: Aldo · español latino es-419 · neural · offline.')
-          s=s.replace('android:id="@+id/btnVoxSherpa"', 'android:id="@+id/btnVoxSherpa"\n                    android:visibility="gone"')
-          s=s.replace('android:id="@+id/btnTtsSettings"', 'android:id="@+id/btnTtsSettings"\n                android:visibility="gone"')
-          p.write_text(s)
-          PY
+          python3 embedded-patch/apply_2_0_4.py
+          grep -q 'ensureEspeakDataDir' NarradorOffline/app/src/main/java/com/gregorio/narradoroffline/NarrationService.java
+          grep -q 'vits.setDataDir(espeakDataDir)' NarradorOffline/app/src/main/java/com/gregorio/narradoroffline/NarrationService.java
+          grep -q 'ttsInitializing' NarradorOffline/app/src/main/java/com/gregorio/narradoroffline/NarrationService.java
 
       - name: Embed Aldo neural voice
         run: |
@@ -92,7 +71,7 @@ jobs:
         run: |
           APK=NarradorOffline/app/build/outputs/apk/debug/app-debug.apk
           unzip -t "$APK" >/dev/null
-          unzip -l "$APK" | grep -E 'assets/tts/es_MX-ald-medium.onnx|lib/arm64-v8a/libsherpa-onnx-jni.so|lib/arm64-v8a/libonnxruntime.so'
+          unzip -l "$APK" | grep -E 'assets/tts/es_MX-ald-medium.onnx|assets/tts/espeak-ng-data|lib/arm64-v8a/libsherpa-onnx-jni.so|lib/arm64-v8a/libonnxruntime.so'
           found=0
           for dex in $(unzip -Z1 "$APK" | grep '^classes.*\.dex$'); do
             if unzip -p "$APK" "$dex" | strings | grep -q 'kotlin/jvm/internal/Intrinsics'; then
@@ -105,6 +84,6 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: NarradorOffline-MotoG75-Neural-2.0.3-KotlinFix-APK
+          name: NarradorOffline-MotoG75-Neural-2.0.4-SafeInit-APK
           path: NarradorOffline/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
