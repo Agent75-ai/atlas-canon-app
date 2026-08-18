@@ -1,1 +1,1 @@
-Trigger embedded neural build after accepting the official sherpa TTS release model.
+Trigger embedded neural build after removing obsolete VoxSherpa compile reference.
