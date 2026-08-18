@@ -1,1 +1,1 @@
-Trigger build after Android TTS settings compatibility fix.
+Trigger embedded neural build after accepting the official sherpa TTS release model.
