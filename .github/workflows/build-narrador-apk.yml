@@ -37,7 +37,10 @@ jobs:
 
       - name: Recreate source project
         run: |
-          base64 -d narrador-source.b64 > NarradorOffline_MotoG75_source.zip
+          cat narrador-parts/*.b64 > narrador-source.full.b64
+          test "$(wc -c < narrador-source.full.b64)" -eq 31616
+          base64 -d narrador-source.full.b64 > NarradorOffline_MotoG75_source.zip
+          echo "12e8f6e126daa42904aafb140f0cb069fa99e07d30e31424f05b5b8daecd1ab1  NarradorOffline_MotoG75_source.zip" | sha256sum -c -
           unzip -q NarradorOffline_MotoG75_source.zip
 
       - name: Apply neural voice and Markdown loading fix
