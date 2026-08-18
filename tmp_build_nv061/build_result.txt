@@ -1,0 +1,9 @@
+status=success
+run_id=32187508193
+run_attempt=1
+source_commit=1bae8ea498757a42a463c417537b33cd60c21b6e
+source_sha256=fb507a0491305da2d4bb8315c5a81b3c30202335fe2342ac4ce1d2eb9173aa19
+artifact_id=9343099827
+artifact_url=https://github.com/Agent75-ai/atlas-canon-app/actions/runs/32187508193/artifacts/9343099827
+apk_sha256=72c8699b2c03049486d6f374efe229cbafdacaf2b3ec429d8318bfb31211d07a
+apk_size=94721176
