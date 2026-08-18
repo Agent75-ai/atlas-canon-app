@@ -1,1 +1,1 @@
-Trigger build after verified source chunk reconstruction and corrected checksum.
+Trigger build after Android TTS settings compatibility fix.
