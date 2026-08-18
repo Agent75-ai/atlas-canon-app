@@ -65,7 +65,9 @@ jobs:
           p.write_text(s)
 
           p=Path('NarradorOffline/app/src/main/java/com/gregorio/narradoroffline/MainActivity.java')
-          s=p.read_text().replace('Settings.ACTION_TTS_SETTINGS', '"com.android.settings.TTS_SETTINGS"')
+          s=p.read_text()
+          s=s.replace('Settings.ACTION_TTS_SETTINGS', '"com.android.settings.TTS_SETTINGS"')
+          s=s.replace('NarrationService.VOXSHERPA_PACKAGE', 'getPackageName()')
           p.write_text(s)
 
           p=Path('NarradorOffline/app/src/main/res/layout/activity_main.xml')
