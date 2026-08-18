@@ -39,21 +39,35 @@ jobs:
           unzip -q NarradorOffline_MotoG75_source.zip
 
       - name: Build debug APK
+        id: apkbuild
+        continue-on-error: true
         working-directory: NarradorOffline
-        run: gradle --no-daemon :app:assembleDebug
-
-      - name: Export APK to temporary branch
-        if: github.event_name == 'push'
         run: |
-          base64 -w0 NarradorOffline/app/build/outputs/apk/debug/app-debug.apk > NarradorOffline-MotoG75.apk.b64
-          sha256sum NarradorOffline/app/build/outputs/apk/debug/app-debug.apk > NarradorOffline-MotoG75.sha256
+          set -o pipefail
+          gradle --no-daemon :app:assembleDebug 2>&1 | tee ../narrador-build.log
+
+      - name: Export result to temporary branch
+        if: always() && github.event_name == 'push'
+        run: |
+          if [ -f NarradorOffline/app/build/outputs/apk/debug/app-debug.apk ]; then
+            base64 -w0 NarradorOffline/app/build/outputs/apk/debug/app-debug.apk > NarradorOffline-MotoG75.apk.b64
+            sha256sum NarradorOffline/app/build/outputs/apk/debug/app-debug.apk > NarradorOffline-MotoG75.sha256
+            echo "BUILD_OK" >> narrador-build.log
+          else
+            echo "BUILD_FAILED" >> narrador-build.log
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add NarradorOffline-MotoG75.apk.b64 NarradorOffline-MotoG75.sha256
-          git diff --cached --quiet || git commit -m "Build Narrador Offline APK"
+          git add narrador-build.log NarradorOffline-MotoG75.apk.b64 NarradorOffline-MotoG75.sha256 2>/dev/null || true
+          git diff --cached --quiet || git commit -m "Narrador APK build result"
           git push origin HEAD:temp-narrador-apk
 
+      - name: Fail if APK build failed
+        if: steps.apkbuild.outcome == 'failure'
+        run: exit 1
+
       - name: Upload APK
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: NarradorOffline-MotoG75-APK
