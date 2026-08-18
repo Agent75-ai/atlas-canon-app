@@ -43,11 +43,11 @@ jobs:
           echo "12e8f6e126daa42904aafb140f0cb069fa99e07d30e31424f05b5b8daecd1ab1  NarradorOffline_MotoG75_source.zip" | sha256sum -c -
           unzip -q NarradorOffline_MotoG75_source.zip
 
-      - name: Apply neural voice and Markdown loading fix
+      - name: Apply neural voice and playback fix
         run: |
           cat embedded-patch/NarrationService.part*.b64 > /tmp/narration-service.gz.b64
           base64 -d /tmp/narration-service.gz.b64 | gzip -d > NarradorOffline/app/src/main/java/com/gregorio/narradoroffline/NarrationService.java
-          echo "705d9d99271d4eba71bab3f5949687444fbb1e0f5e668f69b3b0bc5a9e07eae7  NarradorOffline/app/src/main/java/com/gregorio/narradoroffline/NarrationService.java" | sha256sum -c -
+          echo "db5211421072bc8b64f76844643533903eea162f16a08c0a206956ef8507559a  NarradorOffline/app/src/main/java/com/gregorio/narradoroffline/NarrationService.java" | sha256sum -c -
 
           base64 -d embedded-patch/MainActivity.fixed.gz.b64 | gzip -d > NarradorOffline/app/src/main/java/com/gregorio/narradoroffline/MainActivity.java
           echo "aaf31fe2fb351766e2154c457781700169d2a3f849f08a51c1759c3835aa75c8  NarradorOffline/app/src/main/java/com/gregorio/narradoroffline/MainActivity.java" | sha256sum -c -
@@ -59,8 +59,8 @@ jobs:
           p.write_text(s)
           p=Path('NarradorOffline/app/build.gradle')
           s=p.read_text()
-          s=s.replace('versionCode 1', 'versionCode 3')
-          s=s.replace("versionName '1.0.0'", "versionName '2.0.1-neural'")
+          s=s.replace('versionCode 1', 'versionCode 4')
+          s=s.replace("versionName '1.0.0'", "versionName '2.0.2-neural'")
           s=s.replace('targetSdk 35\n', "targetSdk 35\n        ndk { abiFilters 'arm64-v8a' }\n")
           s += "\n\ndependencies {\n    implementation 'com.github.k2-fsa:sherpa-onnx:v1.13.4'\n}\n"
           p.write_text(s)
@@ -71,16 +71,6 @@ jobs:
           s=s.replace('android:id="@+id/btnTtsSettings"', 'android:id="@+id/btnTtsSettings"\n                android:visibility="gone"')
           p.write_text(s)
           PY
-
-      - name: Upload patched Java source for diagnosis
-        uses: actions/upload-artifact@v4
-        with:
-          name: NarradorOffline-Patched-Java-Source
-          path: |
-            NarradorOffline/app/src/main/java/com/gregorio/narradoroffline/MainActivity.java
-            NarradorOffline/app/src/main/java/com/gregorio/narradoroffline/NarrationService.java
-            NarradorOffline/app/src/main/java/com/gregorio/narradoroffline/MarkdownUtils.java
-          if-no-files-found: error
 
       - name: Embed Aldo neural voice
         run: |
@@ -104,6 +94,6 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: NarradorOffline-MotoG75-Neural-FileFix-APK
+          name: NarradorOffline-MotoG75-Neural-PlaybackFix-APK
           path: NarradorOffline/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
