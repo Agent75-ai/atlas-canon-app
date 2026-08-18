@@ -40,19 +40,19 @@ jobs:
           cat narrador-parts/*.b64 > narrador-source.full.b64
           test "$(wc -c < narrador-source.full.b64)" -eq 31616
           base64 -d narrador-source.full.b64 > NarradorOffline_MotoG75_source.zip
-          echo "12e8f6e126daa42904aafb140f0cb069fa99e07d30e31424f05b5b8daecd1ab1  NarradorOffline_MotoG75_source.zip" | sha256sum -c -
+          test "$(sha256sum NarradorOffline_MotoG75_source.zip | cut -d' ' -f1)" = "12e8f6e126daa42904aafb140f0cb069fa99e07d30e31424f05b5b8daecd1ab1"
           unzip -q NarradorOffline_MotoG75_source.zip
 
       - name: Apply neural voice and playback fix
         run: |
           cat embedded-patch/pcm16/*.b64 > /tmp/narration-service.gz.b64
           test "$(wc -c < /tmp/narration-service.gz.b64)" -eq 7476
-          echo "9f0b09cab80525c6ec7267c5f28e92d70496777b39a1c1e3dce34fa77f219f2  /tmp/narration-service.gz.b64" | sha256sum -c -
+          test "$(sha256sum /tmp/narration-service.gz.b64 | cut -d' ' -f1)" = "9f0b09cab80525c6ec7267c5f28e92d70496777b39a1c1e3dce34fa77f219f2"
           base64 -d /tmp/narration-service.gz.b64 | gzip -d > NarradorOffline/app/src/main/java/com/gregorio/narradoroffline/NarrationService.java
-          echo "db5211421072bc8b64f76844643533903eea162f16a08c0a206956ef8507559a  NarradorOffline/app/src/main/java/com/gregorio/narradoroffline/NarrationService.java" | sha256sum -c -
+          test "$(sha256sum NarradorOffline/app/src/main/java/com/gregorio/narradoroffline/NarrationService.java | cut -d' ' -f1)" = "db5211421072bc8b64f76844643533903eea162f16a08c0a206956ef8507559a"
 
           base64 -d embedded-patch/MainActivity.fixed.gz.b64 | gzip -d > NarradorOffline/app/src/main/java/com/gregorio/narradoroffline/MainActivity.java
-          echo "aaf31fe2fb351766e2154c457781700169d2a3f849f08a51c1759c3835aa75c8  NarradorOffline/app/src/main/java/com/gregorio/narradoroffline/MainActivity.java" | sha256sum -c -
+          test "$(sha256sum NarradorOffline/app/src/main/java/com/gregorio/narradoroffline/MainActivity.java | cut -d' ' -f1)" = "aaf31fe2fb351766e2154c457781700169d2a3f849f08a51c1759c3835aa75c8"
 
           python3 - <<'PY'
           from pathlib import Path
