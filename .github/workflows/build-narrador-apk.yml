@@ -45,7 +45,9 @@ jobs:
 
       - name: Apply neural voice and playback fix
         run: |
-          cat embedded-patch/NarrationService.part*.b64 > /tmp/narration-service.gz.b64
+          cat embedded-patch/pcm16/*.b64 > /tmp/narration-service.gz.b64
+          test "$(wc -c < /tmp/narration-service.gz.b64)" -eq 7476
+          echo "9f0b09cab80525c6ec7267c5f28e92d70496777b39a1c1e3dce34fa77f219f2  /tmp/narration-service.gz.b64" | sha256sum -c -
           base64 -d /tmp/narration-service.gz.b64 | gzip -d > NarradorOffline/app/src/main/java/com/gregorio/narradoroffline/NarrationService.java
           echo "db5211421072bc8b64f76844643533903eea162f16a08c0a206956ef8507559a  NarradorOffline/app/src/main/java/com/gregorio/narradoroffline/NarrationService.java" | sha256sum -c -
 
