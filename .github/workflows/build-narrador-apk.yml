@@ -7,6 +7,9 @@ on:
     branches: ["main"]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -38,6 +41,17 @@ jobs:
       - name: Build debug APK
         working-directory: NarradorOffline
         run: gradle --no-daemon :app:assembleDebug
+
+      - name: Export APK to temporary branch
+        if: github.event_name == 'push'
+        run: |
+          base64 -w0 NarradorOffline/app/build/outputs/apk/debug/app-debug.apk > NarradorOffline-MotoG75.apk.b64
+          sha256sum NarradorOffline/app/build/outputs/apk/debug/app-debug.apk > NarradorOffline-MotoG75.sha256
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add NarradorOffline-MotoG75.apk.b64 NarradorOffline-MotoG75.sha256
+          git diff --cached --quiet || git commit -m "Build Narrador Offline APK"
+          git push origin HEAD:temp-narrador-apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
